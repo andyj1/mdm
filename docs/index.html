@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Distribution Matching for Vision-Language Dataset Distillation</title>
+    <meta name="description"
+        content="Project page for Multimodal Distribution Matching for Vision-Language Dataset Distillation (CVPR 2026)">
+
+    <!-- Fonts and Icons -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS (adapted from CAMEO) -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+
+    <!-- Top Navigation -->
+    <div class="sidebar">
+        <a href="#overview" class="sidebar-item">
+            <div class="sidebar-dot"></div>
+            <span class="sidebar-label">Overview</span>
+        </a>
+        <a href="#method" class="sidebar-item">
+            <div class="sidebar-dot"></div>
+            <span class="sidebar-label">Proposed Method: MDM</span>
+        </a>
+        <a href="#results" class="sidebar-item">
+            <div class="sidebar-dot"></div>
+            <span class="sidebar-label">Results</span>
+        </a>
+        <a href="#citation" class="sidebar-item">
+            <div class="sidebar-dot"></div>
+            <span class="sidebar-label">Citation</span>
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="overview" class="hero-section">
+        <div class="hero-container">
+            <h1 class="hero-title">
+                Multimodal Distribution Matching<br>for Vision-Language Dataset Distillation
+            </h1>
+            <p class="hero-status">CVPR 2026</p>
+
+            <!-- Authors -->
+            <div class="hero-authors">
+                <span><a href="mailto:jeong2@kaist.ac.kr" target="_blank" rel="noopener noreferrer">Jongoh Jeong</a><sup>*</sup></span>
+                <span><a href="mailto:kwonhoyong3@kaist.ac.kr" target="_blank" rel="noopener noreferrer">Hoyong Kwon</a><sup>*</sup></span>
+                <span><a href="mailto:alstjrx1x1@kaist.ac.kr" target="_blank" rel="noopener noreferrer">Minseok Kim</a><sup>*</sup></span>
+                <span><a href="mailto:kjyoon@kaist.ac.kr" target="_blank" rel="noopener noreferrer">Kuk-Jin Yoon</a><sup>&dagger;</sup></span>
+            </div>
+
+            <div class="hero-affiliations">
+                <span><sup>1</sup>Visual Intelligence Lab., KAIST</span>
+                <span><sup>&dagger;</sup>Corresponding author</span>
+            </div>
+
+            <!-- Link Buttons -->
+            <div class="hero-buttons">
+                <a href="paper.pdf" class="btn" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-file-pdf"></i> Paper
+                </a>
+                <a href="https://github.com/andyj1/mdm" class="btn btn-outline" target="_blank" rel="noopener">
+                    <i class="fa-brands fa-github"></i> Code
+                </a>
+                <a href="#citation" class="btn btn-outline">
+                    <i class="fa-solid fa-quote-right"></i> BibTeX
+                </a>
+            </div>
+        </div>
+
+        <!-- Teaser Section -->
+        <div class="teaser-container">
+            <!-- TL;DR Box -->
+            <div class="tldr-box">
+                <div class="tldr-content">
+                    <span class="tldr-label">TL;DR</span>
+                    <p class="tldr-text">
+                        We propose a <em>geometry-aware framework</em> that distills vision–language datasets by matching real and synthetic distributions on the unit hypersphere. Our method achieves <em>significantly less distillation compute</em> than trajectory-based approaches and <em>generalizes more robustly</em> across encoder architectures.
+                    </p>
+                </div>
+            </div>
+            <!-- Figure 2 below TL;DR -->
+            <div class="figure-block" style="margin-top: 2rem;">
+                <div class="analysis-image-container">
+                    <img src="img/fig2_crop.png" alt="Figure 2: MDM framework" class="analysis-image">
+                </div>
+                <p class="table-caption"><strong>Figure:</strong> Overview of MDM. Our MDM method consists of (i) synthetic data initialization using k-means clustering, (ii) image-text model initialization using weight-space interpolation between a pretrained and N finetuned models, and (iii) multimodal distribution matching that minimizes geodesic kernel energy between real and synthetic pairs on the unit hypersphere.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Abstract -->
+    <section class="section alt-bg">
+        <div class="container">
+            <h2 class="section-title">Abstract</h2>
+            <div class="abstract-text">
+                <p>Dataset distillation compresses large training sets into compact synthetic datasets while preserving downstream performance. As modern systems increasingly operate on paired vision–language inputs, multimodal distillation must preserve representation quality and cross-modal alignment under tight compute and memory budgets, yet prior methods often require heavy computes and overlook their correlations.</p>
+                <p>To address this, we present <strong>Multimodal Distribution Matching (MDM)</strong>, a geometry-aware framework for efficient and generalizable multimodal distillation. Specifically, MDM integrates complementary components at the data, model, and loss levels. At the data level, it initializes synthetic image–text pairs by sampling from clusters in the joint embedding space. At the model level, it forms a mixed teacher by interpolating independently fine-tuned models in weight space according to their angular deviation from the pretrained anchor. At the loss level, it matches joint distributions on the unit hypersphere using a geometry-aware matching objective that exploits the joint features in the cross-modal agreement and discrepancy directions along with symmetric contrastive learning.</p>
+                <p>Across image–text retrieval benchmarks with cross-architecture evaluation, MDM yields compact synthetic sets that preserve multimodal semantics, substantially reduce distillation cost, and remain robust across architectures.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Method Section -->
+    <section id="method" class="section">
+        <div class="container">
+            <h2 class="section-title">Proposed Method: MDM</h2>
+            <div class="method-figure-top">
+                <div class="analysis-image-container">
+                    <img src="img/fig1_crop.png" alt="Figure 1: MDM vs MTT comparison" class="analysis-image">
+                </div>
+                <p class="table-caption"><strong>Figure:</strong> Comparison between trajectory matching (MTT) and our distribution matching (MDM). MDM directly matches joint distributions in the embedding space, reducing compute and improving generalization.</p>
+            </div>
+            <p>MDM replaces trajectory and similarity-matrix supervision with distribution matching on the unit hypersphere. Unlike prior methods that replay training trajectories or distill similarity matrices---which require heavy computation and tend to bias optimization toward projection subspaces tied to specific encoder architectures---our approach directly matches the joint distributions of real and synthetic data. We exploit both agreement and discrepancy features between image and text embeddings on the hypersphere, thereby addressing scalability and cross-architecture generalization with significantly lower compute than trajectory-based methods such as MTT-VL and LoRS.</p>
+            <p class="method-below-figure"><strong>Joint-space initialization:</strong> We embed all real pairs, run K-means clustering with K = |D<sub>syn</sub>|, and for each cluster select the real sample whose joint feature is closest to its centroid. This induces broad coverage of joint semantic modes. Because the joint embedding concatenates image and text features, clustering reflects multimodal structure---providing stronger initialization for distillation.</p>
+            <div class="analysis-content">
+                <p><strong>Adaptive model initialization:</strong> Beyond data initialization, the image–text model's initialization is crucial. If the model remains too close to the pretrained anchor, the teacher may underfit the real multimodal structure. Conversely, leaning too heavily on a single finetuned expert causes synthetic data to inherit that expert's model-specific geometry. We therefore merge the model by interpolating N finetuned experts in weight space according to their angular deviation from the pretrained anchor---yielding architecture-agnostic supervision that adapts only when expert directions align.</p>
+                <p><strong>Geodesic kernel energy:</strong> Given normalized embeddings (z<sub>v</sub>, z<sub>t</sub>) on the unit hypersphere S<sup>d−1</sup>, we construct agreement vectors \(u = \text{normalize}(z_v + z_t)\) and discrepancy vectors \(g = \text{normalize}(z_v - z_t)\), where \(\text{normalize}(\cdot) := \cdot/\|\cdot\|_2\). We compute angular distance \(\phi(a,b) = \arccos(\langle a, b \rangle) \in [0,\pi]\) and kernelize with a geodesic Gaussian kernel:
+\[
+k_{\text{geo}}(a,b) = \exp\left(-\frac{\phi(a,b)^2}{2\sigma^2}\right), \quad \sigma > 0.
+\]
+For finite sets \(A = \{a_i\}_{i=1}^m\) and \(B = \{b_j\}_{j=1}^n\) on S<sup>d−1</sup>, the geodesic kernel energy is
+\[
+\text{GKE}(A,B) = \left[ \frac{1}{m^2}\sum_{i,i'} k_{\text{geo}}(a_i,a_{i'}) + \frac{1}{n^2}\sum_{j,j'} k_{\text{geo}}(b_j,b_{j'}) - \frac{2}{mn}\sum_{i,j} k_{\text{geo}}(a_i,b_j) \right]^{1/2}.
+\]
+For each mini-batch, we construct batch sets \(U_r = \{u^r_i\}_{i=1}^{B_r}\), \(U_s = \{u^s_j\}_{j=1}^{B_s}\), \(G_r = \{g^r_i\}_{i=1}^{B_r}\), and \(G_s = \{g^s_j\}_{j=1}^{B_s}\), where \(r\) denotes the real set and \(s\) the synthetic set. We minimize \(\mathcal{L}_{\text{agr}} = \text{GKE}(U_r, U_s)\) and \(\mathcal{L}_{\text{dis}} = \text{GKE}(G_r, G_s)\), combined with InfoNCE for image–text alignment:
+\[
+\mathcal{L}_{\text{MDM}} = \mathcal{L}_{\text{InfoNCE}} + \lambda_{\text{agr}} \mathcal{L}_{\text{agr}} + \lambda_{\text{dis}} \mathcal{L}_{\text{dis}}.
+\]</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results" class="section">
+        <div class="container">
+            <div class="results-block">
+                <h2 class="section-title">Retrieval Results</h2>
+                <p class="ablation-intro">Image-text retrieval results for 100, 200, and 500 synthetic pairs on Flickr8k, Flickr30k, and COCO. Best and runner-up in <strong>bold</strong> and <u>underline</u>.</p>
+                <div class="figure-block">
+                    <div class="analysis-image-container">
+                        <img src="img/table1_crop.png" alt="Table 1: Main retrieval results" class="analysis-image">
+                    </div>
+                    <p class="table-caption"><strong>Table:</strong> Image-text retrieval results for 100, 200, and 500 synthetic pairs using the coreset methods and distillation method. The condensation rate for {Flickr8k, Flickr30k, and COCO} datasets are approximately {1.7%, 0.3%, 0.8‰}, {3.3%, 0.7%, 1.7‰}, {8.3%, 1.7%, 4.4‰} for 100, 200, and 500 pairs. Best and runner-up results are indicated in boldface and underline, respectively.</p>
+                </div>
+            </div>
+            <div class="results-block">
+                <h2 class="section-title">Cross-Architecture Generalization</h2>
+                <p class="ablation-intro">Averaged results over IR/TR@K={1,5,10}. MDM achieves higher mean performance than LoRS across NFNet, NF-ResNet, NF-RegNet with BERT/DistilBERT.</p>
+                <div class="figure-block figure-block-fullwidth">
+                    <div class="analysis-image-container analysis-image-fullwidth">
+                        <img src="img/table2_crop.png" alt="Table 2: Cross-architecture results" class="analysis-image">
+                    </div>
+                    <p class="table-caption"><strong>Table:</strong> Cross-architecture generalization. We report the averaged results over retrieval metrics including IR/TR@K={1,5,10}. Note that the source model results denoted with '∗' are not averaged, and the best results are in boldface.</p>
+                </div>
+            </div>
+            <div class="results-block">
+                <h2 class="section-title">Compute Efficiency</h2>
+                <div class="compute-efficiency-grid">
+                    <div class="figure-block">
+                        <div class="analysis-image-container">
+                            <img src="img/table3_crop.png" alt="Table 3: Compute statistics" class="analysis-image">
+                        </div>
+                        <p class="table-caption"><strong>Table:</strong> Compute statistics for different # of data pairs.</p>
+                    </div>
+                    <div class="figure-block">
+                        <div class="analysis-image-container">
+                            <img src="img/fig4_crop.png" alt="Figure 4: Performance vs iterations" class="analysis-image">
+                        </div>
+                        <p class="table-caption"><strong>Figure:</strong> Performance curve across datasets and data pairs. Ours consistently achieves higher performance at remarkably smaller iterations than the baseline.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="results-block">
+                <h2 class="section-title">Qualitative Results</h2>
+                <div class="figure-block">
+                    <div class="analysis-image-container">
+                        <img src="img/fig3_crop.png" alt="Figure 3: Qualitative comparison" class="analysis-image">
+                    </div>
+                    <p class="table-caption"><strong>Figure:</strong> Qualitative results of synthesized data. We compare the initial (left) and distilled samples (right).</p>
+                </div>
+                <div class="figure-block">
+                    <div class="analysis-image-container">
+                        <img src="img/figs3_crop.png" alt="Figure S3: Additional qualitative results" class="analysis-image">
+                    </div>
+                    <p class="table-caption"><strong>Figure:</strong> Qualitative comparisons for the ablation studies with different data and model initializations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Citation Section -->
+    <section id="citation" class="citation-section">
+        <div class="container">
+            <h2 class="section-title" style="font-size: 1.5rem; border: none; margin-bottom: 1rem;">Citation</h2>
+            <div class="citation-block group">
+                <button onclick="copyBibtex()" class="citation-copy-btn">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+                <pre class="citation-code"><code id="bibtex-text">@inproceedings{jeong2026mdm,
+  title={Multimodal Distribution Matching for Vision-Language Dataset Distillation},
+  author={Jeong, Jongoh and Kwon, Hoyong and Kim, Minseok and Yoon, Kuk-Jin},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2026}
+}</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p style="font-size: 0.8rem;">Page design adapted from <a href="https://cvlab-kaist.github.io/CAMEO/" target="_blank" rel="noopener noreferrer">CAMEO</a>.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll Spy for Navigation
+        function initScrollSpy() {
+            const sections = document.querySelectorAll('section[id]');
+            const sidebarLinks = document.querySelectorAll('.sidebar-item');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (!sidebar) return;
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-50% 0px -50% 0px',
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        sidebarLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === '#' + id) {
+                                link.classList.add('active');
+                                const linkRect = link.getBoundingClientRect();
+                                const sidebarRect = sidebar.getBoundingClientRect();
+                                const relativeTop = linkRect.top - sidebarRect.top;
+                                sidebar.style.setProperty('--active-position', `${relativeTop - 32}px`);
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+        }
+
+        function copyBibtex() {
+            const el = document.getElementById('bibtex-text');
+            if (!el) return;
+            const text = el.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.citation-copy-btn');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = original; }, 2000);
+            });
+        }
+
+        // Fade-in Animation
+        function initFadeInAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { root: null, rootMargin: '0px', threshold: 0.1 });
+
+            document.querySelectorAll('.section, .hero-section, .citation-section, .footer').forEach(el => {
+                el.classList.add('fade-in-section');
+                observer.observe(el);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initScrollSpy();
+            initFadeInAnimations();
+        });
+    </script>
+</body>
+
+</html>
