@@ -1,6 +1,6 @@
-# Multimodal Dataset Distillation for Vision-Language
+# Multimodal Distribution Matching for Vision-Language Dataset Distillation
 
-This repository contains the implementation for **Multimodal Dataset Distillation for Vision-Language**, a method for condensing large vision-language datasets into smaller, synthetic datasets while preserving training efficacy.
+This repository contains the implementation for **Multimodal Distribution Matching for Vision-Language Dataset Distillation**, a method for condensing large vision-language datasets into smaller, synthetic datasets while preserving training efficacy.
 
 ## 📁 Repository Structure
 
@@ -153,6 +153,28 @@ bash sh/run_crossarch_8k100.sh
 - Image Retrieval: R@1, R@5, R@10
 - Text Retrieval: R@1, R@5, R@10
 - Mean retrieval score
+
+
+
+## Star History
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://api.star-history.com/svg?repos=andyj1/mdm&type=Date&theme=dark
+    "
+  />
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="
+      https://api.star-history.com/svg?repos=andyj1/mdm&type=Date
+    "
+  />
+  <img
+    alt="Star History Chart"
+    src="https://api.star-history.com/svg?repos=andyj1/mdm&type=Date"
+  />
+</picture>
 
 ## 📖 Citation
 
