@@ -1,35 +1,6 @@
-# Multimodal Distribution Matching for Vision-Language Dataset Distillation
+# Multimodal Distribution Matching for Vision-Language Dataset Distillation (CVPR 2026)
 
 This repository contains the implementation for **Multimodal Distribution Matching for Vision-Language Dataset Distillation**, a method for condensing large vision-language datasets into smaller, synthetic datasets while preserving training efficacy.
-
-## 📁 Repository Structure
-
-```
-mdm/
-├── distill_mdm.py          # Main distillation script
-├── eval.py                 # Evaluation script for distilled data
-├── eval_crossarch.py       # Cross-architecture evaluation
-├── distill_coreset.py      # Coreset-based distillation
-├── real_full.py            # Full dataset training baseline
-├── sh/                     # Shell scripts for running experiments
-│   ├── run_distill_final_flickr8k_100.sh
-│   ├── run_distill_final_flickr30k_200.sh
-│   ├── run_distill_final_coco_500.sh
-│   ├── run_crossarch_8k100.sh
-│   └── ...
-├── src/                    # Source code modules
-│   ├── networks.py         # Model architectures (CLIPModel_full)
-│   ├── epoch.py            # Training and evaluation epochs
-│   ├── clustering_utils.py # K-means and clustering utilities
-│   ├── utils.py            # Utility functions (DiffAugment, ParamDiffAug)
-│   ├── vl_distill_utils.py # Vision-language distillation utilities
-│   └── reparam_module.py   # Reparameterization modules
-├── data/                   # Dataset loading and processing
-│   └── (dataset loaders)
-├── buffer/                 # Teacher model buffers
-├── logs/                   # Training logs
-└── synthetic_data/         # Generated synthetic datasets
-```
 
 ## 📊 Dataset Structure
 
@@ -46,43 +17,6 @@ data/
     ├── flickr8k/
     └── coco/
 ```
-
-**Default paths** (configurable via command-line arguments):
-
-- Image root: `./data/datasets/Flickr30k/`
-- Annotation root: `./data/annotations/`
-
-## 🔧 Installation of Required Libraries
-
-Install the required Python packages:
-
-```bash
-pip install torch torchvision
-pip install transformers
-pip install numpy matplotlib
-pip install wandb tensorboard
-pip install tqdm rich prettytable
-pip install scikit-learn  # For clustering utilities
-```
-
-**Key dependencies:**
-
-- `torch` - PyTorch for deep learning
-- `transformers` - For BERT/DistilBERT text encoders
-- `wandb` - Weights & Biases for experiment tracking
-- `tensorboard` - TensorBoard logging
-- `rich` - Enhanced terminal output
-- `prettytable` - Formatted table output
-
-## 📚 Datasets Used
-
-This repository supports the following vision-language datasets:
-
-- **Flickr8k** 📸 - 8,000 images with 5 captions each
-- **Flickr30k** 📸 - 30,000 images with 5 captions each
-- **MS-COCO** 🖼️ - Microsoft Common Objects in Context dataset
-
-All datasets should be placed in the `data/datasets/` directory with corresponding annotations in `data/annotations/`.
 
 ## 🚀 Usage
 
