@@ -1,136 +1,76 @@
 # Multimodal Distribution Matching for Vision-Language Dataset Distillation (CVPR 2026)
 
-This repository contains the implementation for **Multimodal Distribution Matching for Vision-Language Dataset Distillation**, a method for condensing large vision-language datasets into smaller, synthetic datasets while preserving training efficacy.
+Official implementation of Multimodal Distribution Matching for Vision-Language Dataset Distillation,a method for condensing large vision-language datasets into smaller synthetic sets while preserving training efficacy.
 
-## 📊 Dataset Structure
+## Repository layout
 
-The project expects datasets to be organized as follows:
+Experts: [buffers](https://drive.google.com/drive/folders/1Q9etol246RjeB_XZ3on5aEGOirW4o1aB?usp=sharing).
 
+Tracked layout (as in version control):
+
+```text
+.
+├── distill_mdm.py       # Main dataset distillation entry point
+├── eval.py              # Retrieval evaluation on distilled checkpoints
+├── src/                 
+│   ├── clustering_utils.py
+│   ├── epoch.py
+│   ├── geo_utils.py
+│   ├── model.py
+│   ├── model_utils.py
+│   ├── networks.py
+│   ├── reparam_module.py
+│   ├── similarity_mining.py
+│   ├── utils.py
+│   └── vl_distill_utils.py
+├── utils/               
+├── sh/
+│   ├── distill.sh       
+│   └── eval.sh           
 ```
+
+## Dataset structure
+
+
+```text
 data/
 ├── datasets/
-│   ├── Flickr30k/          # Flickr30k images
-│   ├── Flickr8k/           # Flickr8k images
-│   └── COCO/               # MS-COCO images
-└── annotations/             # Annotation files (captions, etc.)
+│   ├── Flickr30k/
+│   ├── Flickr8k/
+│   └── COCO/
+└── annotations/
     ├── flickr30k/
     ├── flickr8k/
     └── coco/
 ```
 
-## 🚀 Usage
+Defaults in `distill_mdm.py` include:
 
-### Training (Distillation)
+image roots such as `./data/datasets/Flickr30k/` and annotation root `./data/annotations/` when using the `flickr` / `flickr8k` / `coco` options.
 
-Train a distilled dataset using the main script:
+## Dependencies and Usage
 
-```bash
-python distill_mdm.py \
-    --dataset flickr8k \
-    --buffer_path ./buffer/flickr8k/nfnet_bert/InfoNCE \
-    --num_queries 100 \
-    --batch_size_train 64 \
-    --batch_size_test 64 \
-    --lr_txt 100 \
-    --lr_img 100 \
-    --Iteration 3000 \
-    --image_encoder nfnet \
-    --text_encoder bert \
-    --w_nce 1.0 \
-    --w_sph_u_mmd 0.8 \
-    --w_sph_g_mmd 0.8 \
-    --wandb \
-    --wandb_project MDD_CVPR2026_Submission
-```
-
-**Key parameters:**
-
-- `--dataset`: Dataset to use (`flickr8k`, `flickr30k`, `coco`, or `flickr`)
-- `--num_queries`: Number of synthetic image-text pairs to generate
-- `--image_encoder`: Image encoder architecture (`nfnet`, `nf_resnet50`, `nf_regnet`, `vit`)
-- `--text_encoder`: Text encoder (`bert`, `distilbert`, `clip`)
-- `--buffer_path`: Path to teacher model buffers (required)
-- `--w_nce`, `--w_sph_u_mmd`, `--w_sph_g_mmd`: Loss weights for InfoNCE and spherical MMD losses
-
-**Example shell scripts:**
+Install at least:
 
 ```bash
-# Run Flickr8k distillation with 100 queries
-bash sh/run_distill_final_flickr8k_100.sh <gpu_id> <experiment_name>
-
+conda env create -f mdm.yml
+conda activate mdm
 ```
 
-### Evaluation
-
-Evaluate distilled data on downstream tasks:
-
+### Distillation
 ```bash
-python eval.py \
-    --dataset flickr8k \
-    --num_eval 1 \
-    --ckpt_path ./logs/flickr8k_100_distilled.pt \
-    --loss_type WBCE \
-    --image_encoder nf_resnet50 \
-    --text_encoder bert \
-    --batch_train 64
+export CKPT_PATH=/path/to/distilled.pt
+./sh/distill.sh <gpu_id> [run_name]
 ```
 
-```bash
-
-# Run cross-architecture experiments
-bash sh/run_crossarch_8k100.sh
-
-```
-
-**Evaluation metrics:**
-
-- Image Retrieval: R@1, R@5, R@10
-- Text Retrieval: R@1, R@5, R@10
-- Mean retrieval score
-
-
-
-## Star History
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="
-      https://api.star-history.com/svg?repos=andyj1/mdm&type=Date&theme=dark
-    "
-  />
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="
-      https://api.star-history.com/svg?repos=andyj1/mdm&type=Date
-    "
-  />
-  <img
-    alt="Star History Chart"
-    src="https://api.star-history.com/svg?repos=andyj1/mdm&type=Date"
-  />
-</picture>
-
-## 📖 Citation
+## Citation
 
 If you use this code in your research, please cite:
 
 ```bibtex
-@article{jeong2026mdm,
+@inproceedings{jeong2026mdm,
   title={Multimodal Distribution Matching for Vision-Language Dataset Distillation},
-  author={},
-  journal={},
-  year={},
-  note={}
+  author={Jeong, Jongoh and Kwon, Hoyong and Kim, Minseok and Yoon, Kuk-Jin},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2026}
 }
-```
-
-_Note: Please update the citation with the actual publication details._
-
-## 🙏 Acknowledgements
-
-We thank the authors and contributors of:
-VL-Distill, LoRS-Distill for disclosing their codes for open research.
-
----
-
-For questions or issues, please open an issue on the repository.
