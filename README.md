@@ -50,8 +50,6 @@ image roots such as `./data/datasets/Flickr30k/` and annotation root `./data/ann
 
 ## Dependencies and Usage
 
-Install at least:
-
 ```bash
 conda env create -f mdm.yml
 conda activate mdm
