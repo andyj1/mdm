@@ -2,11 +2,9 @@
 
 Official implementation of Multimodal Distribution Matching for Vision-Language Dataset Distillation,a method for condensing large vision-language datasets into smaller synthetic sets while preserving training efficacy.
 
-## Repository layout
+## About
 
 Experts: [buffers](https://drive.google.com/drive/folders/1Q9etol246RjeB_XZ3on5aEGOirW4o1aB?usp=sharing).
-
-Tracked layout (as in version control):
 
 ```text
 .
@@ -29,8 +27,7 @@ Tracked layout (as in version control):
 │   └── eval.sh           
 ```
 
-## Dataset structure
-
+## Dataset
 
 ```text
 data/
