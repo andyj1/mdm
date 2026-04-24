@@ -2,6 +2,8 @@
 
 Official implementation of Multimodal Distribution Matching for Vision-Language Dataset Distillation,a method for condensing large vision-language datasets into smaller synthetic sets while preserving training efficacy.
 
+[Paper](docs/paper.pdf)
+
 ## About
 
 Experts: [buffers](https://drive.google.com/drive/folders/1Q9etol246RjeB_XZ3on5aEGOirW4o1aB?usp=sharing).
