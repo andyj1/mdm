@@ -2,7 +2,7 @@
 
 Official implementation of *Multimodal Distribution Matching for Vision-Language Dataset Distillation*, a method for condensing a large vision-language dataset into smaller synthetic sets while preserving its downstream performance.
 
-[Paper](docs/paper.pdf)
+[Paper](https://arxiv.org/pdf/2605.23482)
 
 ## About
 
