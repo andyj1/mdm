@@ -27,11 +27,6 @@ def compute_ratio(angle_dict, k=2):
 	return ratio_dict 
 
 def compute_angle(state_dict_1, state_dict_2, ref_state_dict, add_ignore_keys=[], return_cos=False, device='cuda'):
-	# Remove the keys not used for CLIP fine-tuning
-	# ignore_keys = ['model.positional_embedding', 'model.text_projection', 'model.logit_scale',
-	#                     'model.token_embedding.weight', 'model.ln_final.weight', 'model.ln_final.bias']
-	# ignore_keys += ['module.'+key for key in ignore_keys]
-	# ignore_keys.extend(add_ignore_keys)
 	ignore_keys = []
 	return_dict = collections.OrderedDict()
 
@@ -66,20 +61,9 @@ def compute_angle(state_dict_1, state_dict_2, ref_state_dict, add_ignore_keys=[]
 
 @torch.inference_mode()
 def merge(w1, w2, w0, ratio, device='cuda', dtype=torch.float32, non_blocking=True):
-    """
-    빠른 버전 (당신의 merge와 동일한 수식):
-      1) w12 = (w1 + w2) / 2
-      2) w_merge[key] = r * w12 + (1 - r) * w0  (ratio에 key가 있으면), 없으면 w12 유지
-
-    최적화:
-      - float 파라미터만 이동/연산
-      - 각 key당 .to() 1회
-      - r*w12 + (1-r)*w0 = w0 + r*(w12 - w0) 로 한 번에 연산
-    """
     w_merge = {}
 
     for k in w0.keys():
-        # 세 dict 모두에 있어야 하고, float tensor이면서 shape 동일해야 안전
         if (k in w1) and (k in w2) \
            and torch.is_tensor(w1[k]) and torch.is_tensor(w2[k]) and torch.is_tensor(w0[k]) \
            and w1[k].is_floating_point() and w2[k].is_floating_point() and w0[k].is_floating_point() \
@@ -91,32 +75,18 @@ def merge(w1, w2, w0, ratio, device='cuda', dtype=torch.float32, non_blocking=Tr
 
             w12 = 0.5 * (t1 + t2)  # 평균
 
-            # 기본은 당신 코드처럼 w12로 초기화 (ratio에 key가 없으면 평균 유지)
             outk = w12
 
-            # ratio에 key가 있으면 w0와 보간
             if k in ratio:
                 r = torch.as_tensor(ratio[k], dtype=dtype, device=device)
-                # r*w12 + (1-r)*w0  ==  w0 + r*(w12 - w0)  (연산 1번으로 축약)
                 outk = t0 + r * (w12 - t0)
 
             w_merge[k] = outk
 
         else:
-            # float 가 아니거나 shape가 다르면 원본 w0를 그대로 둡니다 (안전한 기본값)
             w_merge[k] = w0[k]
 
     return w_merge
-
-# def merge(w1, w2, w0, ratio, device='cpu'):
-# 	w12 = {} # w12 = (w1 + w2) / 2
-# 	for key in w1.keys():                
-# 		w12[key] = (w1[key].clone().to(device) + w2[key].clone().to(device)) / 2.
-
-# 	w_merge = copy.deepcopy(w12)
-# 	for key, r in ratio.items():        
-# 		w_merge[key] = w12[key].clone().to(device) * r + w0[key].clone().to(device) * (1. - r)
-# 	return w_merge
 
 def merge_expert_buffers(expert1_state_dict, expert2_state_dict, initial_state_dict):
 	angle = compute_angle(expert1_state_dict, expert2_state_dict, initial_state_dict)
@@ -148,66 +118,9 @@ def _load_expert_buffers(img_expert_files, txt_expert_files):
 	txt_expert_2 = txt_expert_2[random_epochs[1]] # per epoch
 
 	return img_expert_1, txt_expert_1, img_expert_2, txt_expert_2
-
-# def visualize(angle, ratio, save_dir='fig'):
-#     os.makedirs(save_dir, exist_ok=True)
-#     # Visualization 
-#     data = angle.items() 
-#     x = list(range(len(data)))
-#     y = [float(item[1]) for item in data]
-#     colors = ['green' if 'ln' in item[0] else 
-#             'red' if 'weight' in item[0] else 
-#             'blue' if 'bias' in item[0] else 
-#             'black' for item in data]
-
-#     plt.figure(figsize=(8, 3))
-#     plt.scatter(x, y, c=colors)
-#     plt.xlabel('Parameter Index')
-#     plt.ylabel('Angle')
-#     plt.title('Angle between w_1 and w_2 based on w_0')
-#     # add legend right top
-#     plt.scatter([], [], c='red', label='MLP/Attn weight')
-#     plt.scatter([], [], c='blue', label='MLP/Attn bias')
-#     plt.scatter([], [], c='green', label='LN weight/bias')
-#     plt.scatter([], [], c='black', label='Others')
-#     plt.legend(loc='upper right')
-#     # plt.show()
-#     plt.savefig('fig/angle.png')
-
-#     data = ratio.items() 
-#     x = list(range(len(data)))
-#     y = [float(item[1]) for item in data]
-#     colors = ['red' if 'weight' in item[0] else 
-#             'blue' if 'bias' in item[0] else 
-#             'green' if 'ln' in item[0] else 
-#             'black' for item in data]
-#     plt.figure(figsize=(8, 3))
-#     plt.scatter(x, y, c=colors)
-#     plt.xlabel('Parameter Index')
-#     plt.ylabel('Interpolation ratio')
-#     plt.title('Interpolation ratio between w_12 and w_0')
-#     # add legend right top
-#     plt.scatter([], [], c='red', label='MLP/Attn weight')
-#     plt.scatter([], [], c='blue', label='MLP/Attn bias')
-#     plt.scatter([], [], c='green', label='LN weight/bias')
-#     plt.scatter([], [], c='black', label='Others')
-#     plt.legend(loc='lower right')
-#     # plt.show()
-#     plt.savefig('fig/ratio.png')
-	
 	
 def make_distillation_model(args, student_net, base_dir='./buffer_lors/flickr8k/nfnet_bert/InfoNCE', file_format='replay_buffer', merge_image=True, merge_text=True, verbose=False):
-	""" loads expert buffers and merges with initial model
 
-	Args:
-		student_net: CLIPModel_full model
-		img_expert_files: list of image expert state dicts (each epoch)
-		txt_expert_files: list of text expert state dicts (each epoch)
-
-	Returns:
-		student_net: CLIPModel_full model with merged expert buffers
-	"""
- 
 	BASE_DIR = base_dir
 	FILE_FORMAT = file_format
 	
@@ -259,21 +172,7 @@ def make_distillation_model(args, student_net, base_dir='./buffer_lors/flickr8k/
 		img_expert_2 = load_model_state_dict(img_file, map_location='cuda')
 		txt_expert_2 = load_model_state_dict(txt_file, map_location='cuda')
 
-		
-	# else:
-	# 	# Alternative format: img_replay_buffer_{EXPERT_NUM}_{EPOCH_NUM}.pth
-	# 	EXPERT_NUM1, EPOCH_NUM1 = random.randint(0, 19), random.randint(1, 10)
-	# 	img_file = os.path.join(BASE_DIR, f'img_replay_buffer_{EXPERT_NUM1}_{EPOCH_NUM1}.pth')
-	# 	txt_file = os.path.join(BASE_DIR, f'txt_replay_buffer_{EXPERT_NUM1}_{EPOCH_NUM1}.pth')
-	# 	img_expert_1 = load_model_state_dict(img_file, map_location='cuda')
-	# 	txt_expert_1 = load_model_state_dict(txt_file, map_location='cuda')
-	
-	# 	EXPERT_NUM2, EPOCH_NUM2 = random.randint(0, 19), random.randint(1, 10)
-	# 	img_file = os.path.join(BASE_DIR, f'img_replay_buffer_{EXPERT_NUM2}_{EPOCH_NUM2}.pth')
-	# 	txt_file = os.path.join(BASE_DIR, f'txt_replay_buffer_{EXPERT_NUM2}_{EPOCH_NUM2}.pth')
-	# 	img_expert_2 = load_model_state_dict(img_file, map_location='cuda')
-	# 	txt_expert_2 = load_model_state_dict(txt_file, map_location='cuda')
-	
+			
 	method = 'FIX_EXPERT_VARY_EPOCH' if FIX_EXPERT_VARY_EPOCH else 'VARY_EXPERT_VARY_EPOCH' if VARY_EXPERT_VARY_EPOCH else 'RANDOM_EXPERT_RANDOM_EPOCH'
 	print(f'{method} || EXPERT_NUM1: {EXPERT_NUM1}, EPOCH_NUM1: {EPOCH_NUM1} || EXPERT_NUM2: {EXPERT_NUM2}, EPOCH_NUM2: {EPOCH_NUM2}')
  
