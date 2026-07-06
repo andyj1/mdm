@@ -238,7 +238,7 @@ def geodesic_distance(a: torch.Tensor, b: torch.Tensor, eps: float = 1e-6) -> to
 	return torch.acos(cosv)  # [N,N] or [N] or scalar-like
 
 def geodesic_loss_pair(a, b, squared: bool = True) -> torch.Tensor:
-	theta = geodesic_distance(a, b)  # broadcast 가능
+	theta = geodesic_distance(a, b) 
 	return (theta * theta).mean() if squared else theta.mean()
 
 def spherical_rbf_kernel(x: torch.Tensor, y: torch.Tensor, sigma: float = 0.5) -> torch.Tensor:
