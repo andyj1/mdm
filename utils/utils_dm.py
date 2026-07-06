@@ -298,7 +298,7 @@ def denormalize_clip(x):
 
 def to_grid_for_tb(x, nrow=8):
 	# x: [B,3,H,W] in CLIP-normalized space (synthetic images)
-	x_denorm = denormalize_clip(x)                # 역정규화
+	x_denorm = denormalize_clip(x)      
 	x_denorm = torch.clamp(x_denorm, 0.0, 1.0)    # TB expects [0,1]
 	return make_grid(x_denorm.cpu(), nrow=nrow)
 
@@ -452,29 +452,6 @@ def spherical_rbf_weights(query: torch.Tensor, keys: torch.Tensor, sigma: float 
 	W = K / (K.sum(dim=1, keepdim=True) + eps)
 	return W
 
-# def conditional_spherical_mean(values: torch.Tensor, keys: torch.Tensor, query: torch.Tensor, sigma: float = 0.5, eps: float = 1e-8):
-# 	"""
-# 	values: [Nk, D]  (ex. real X, real Y, real G)
-# 	keys  : [Nk, D]  (조건변수: ex. real Y for E[X|Y])
-# 	query : [Nq, D]  (ex. syn y to evaluate E_real[X|Y=y_syn])
-# 	반환:   [Nq, D]   (row-wise L2-normalized)
-# 	"""
-# 	W = spherical_rbf_weights(query, keys, sigma=sigma, eps=eps)         # [Nq, Nk]
-# 	W = torch.ones_like(W)
-# 	W = W / W.sum(dim=1, keepdim=True)
-# 	m = W @ values                                                        # [Nq, D]
-# 	m = F.normalize(m, dim=1, eps=eps)
-# 	return m
-
-# === Conditional kernel-MMD: L_{cond-MMD}(g | key)  ==========================
-# g_real:  [Br, D] (unit-norm 권장)
-# g_syn:   [B,  D] (unit-norm 권장)
-# key_real: [Br, D]  (e.g., feat_txt_real or feat_img_real)
-# key_syn:  [B,  D]  (e.g., yi_s or xi_s)
-# sigma_g: kernel bandwidth on g-space (geodesic)
-# sigma_key: kernel bandwidth on key-space (geodesic)
-# weight_mode: 'normalize' (kernel 정규화) 또는 'softmax' (온도=1/sigma_key^2 근사)
-# stopgrad_W: True면 W를 detach하여 키-가중치 경로의 gradient를 끊음(안정성↑)
 def conditional_kernel_mmd(
 	g_real: torch.Tensor,
 	g_syn: torch.Tensor,
@@ -490,8 +467,7 @@ def conditional_kernel_mmd(
 	device = g_syn.device
 	Br = g_real.size(0)
 	B  = g_syn.size(0)
-	# 1) key-space kernel between real keys and syn keys: [Br, B]
-	#    (real -> columns sum to 1 for each syn sample)
+	
 	Ky = spherical_rbf_kernel(key_real, key_syn, sigma=sigma_key)  # [Br, B]
 
 	if weight_mode == 'softmax':
@@ -501,57 +477,27 @@ def conditional_kernel_mmd(
 		# kernel normalize per syn(i)
 		W = Ky / (Ky.sum(dim=0, keepdim=True) + eps)  # [Br, B]
 
-	# 3) 엔트로피/커버리지 보정
 	L_reg = _entropy_reg_kl_to_uniform(W)
 	
-	# 4) (옵션) syn key repulsion
 	keys_syn = F.normalize(key_syn, dim=1)
 	L_rep = _repulsion_loss_spherical(keys_syn, sigma_key=sigma_key)
 	
 	if stopgrad_W:
 		W = W.detach() # real-syn key gap
 
-	# 2) g-space kernels
 	Kg_sr = spherical_rbf_kernel(g_syn,  g_real, sigma=sigma_g)  # [B, Br]
 	Kg_rr = spherical_rbf_kernel(g_real, g_real, sigma=sigma_g)  # [Br, Br]
 
-	# 3) Per-sample conditional MMD^2 for each syn i:
-	#    term1 = k(g_i, g_i) = 1
-	#    term2 = 2 * <k(g_i,·), mu_{p(g|key_i)}> = 2 * sum_j w_{ji} k(g_i, g_j)
-	#    term3 = ||mu||^2 = w_i^T K_rr w_i
 	term1 = torch.ones(B, device=device) * 1.25
 
-	# (Kg_sr * W^T).sum(dim=1) == sum_j w_{ji} k(g_i,g_j)
 	term2 = 2.0 * (Kg_sr * W.t()).sum(dim=1)  # [B]
 
-	# W: [Br, B]  ->  W^T K_rr W  : [B, B]
-	# diag gives each sample's w_i^T K_rr w_i
-	# (mm 순서: (W^T K_rr) 먼저 해서 메모리 절약)
 	M = (W.t() @ Kg_rr) @ W         # [B, B]
 	term3 = torch.diagonal(M, dim1=-2, dim2=-1)  # [B]
 
 	L_cgap_mmd = (term1 - term2 + term3).mean()
 	
 	return L_cgap_mmd, L_reg, L_rep
-
-# def entropy_and_coverage_regularizer(W: torch.Tensor, *, eps: float = 1e-12):
-# 	"""
-# 	W: [Br, B] (real-by-syn), columns sum to 1
-# 	반환:
-# 	  L_ent:  - mean entropy (값이 작아지면 엔트로피 커짐)  -> loss에 +λ_ent * L_ent
-# 	  L_cov:  row-sum 균형 손실 (coverage 균형)              -> loss에 +λ_cov * L_cov
-# 	"""
-# 	# --- (A) Column entropy: encourage high entropy per column ---
-# 	# H_i = - sum_j W_{j,i} log W_{j,i}
-# 	Wc = (W + eps)
-# 	H_col = -(Wc * Wc.log()).sum(dim=0)               # [B]
-# 	L_ent = - H_col.mean()                             # minimize(-mean H) => maximize mean H
-
-# 	# --- (B) Row coverage: encourage balanced usage of reals ---
-# 	row_sum = W.sum(dim=1)                             # [Br]
-# 	target = W.size(1) / W.size(0)                     # B/Br
-# 	L_cov = torch.mean((row_sum - target) ** 2)
-# 	return L_ent, L_cov
 
 def _entropy_reg_kl_to_uniform(W: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
 	# W: [Br, B], columns sum to 1
@@ -567,7 +513,6 @@ def _repulsion_loss_spherical(keys_syn: torch.Tensor, sigma_key: float = 0.5):
 	offdiag = (Kss.sum() - Kss.diagonal().sum()) / max(1, (Kss.numel() - Kss.size(0)))
 	return offdiag  # minimize => push apart
 
-# unbiased estimator (네 코드의 offdiag_mean 규칙과 동일)
 def offdiag_mean(K):
 	n = K.size(0)
 	if K.size(0) == K.size(1) and n > 1:
@@ -575,42 +520,6 @@ def offdiag_mean(K):
 	else:
 		return K.mean()
 
-# ==== Product-kernel MMD^2 for joint variables (A,B) ====
-# def mmd2_product_kernel(
-# 	A_syn: torch.Tensor, B_syn: torch.Tensor,
-# 	A_real: torch.Tensor, B_real: torch.Tensor,
-# 	sigma_A: float, sigma_B: float,
-# ) -> torch.Tensor:
-# 	"""
-# 	A_*, B_*: [N, D] vectors (구면 비교 권장 → 내부에서 normalize는 spherical_rbf_kernel이 처리)
-# 	커널: k((a,b),(a',b')) = kA(a,a') * kB(b,b')
-# 	반환: unbiased MMD^2 (scalar)
-# 	"""
-# 	# 개별 커널들 (지오데식 RBF)
-# 	KA_ss = spherical_rbf_kernel(A_syn,  A_syn,  sigma=sigma_A)  # [Ns,Ns]
-# 	KA_rr = spherical_rbf_kernel(A_real, A_real, sigma=sigma_A)  # [Nr,Nr]
-# 	KA_sr = spherical_rbf_kernel(A_syn,  A_real, sigma=sigma_A)  # [Ns,Nr]
-
-# 	KB_ss = spherical_rbf_kernel(B_syn,  B_syn,  sigma=sigma_B)  # [Ns,Ns]
-# 	KB_rr = spherical_rbf_kernel(B_real, B_real, sigma=sigma_B)  # [Nr,Nr]
-# 	KB_sr = spherical_rbf_kernel(B_syn,  B_real, sigma=sigma_B)  # [Ns,Nr]
-
-# 	# 제품 커널(아다마르 곱)
-# 	K_ss = KA_ss * KB_ss
-# 	K_rr = KA_rr * KB_rr
-# 	K_sr = KA_sr * KB_sr
-
-# 	# unbiased estimator (네 코드의 offdiag_mean 규칙과 동일)
-# 	def offdiag_mean(K):
-# 		n = K.size(0)
-# 		if K.size(0) == K.size(1) and n > 1:
-# 			return (K.sum() - K.diag().sum()) / (n * (n - 1))
-# 		else:
-# 			return K.mean()
-
-# 	mmd2 = offdiag_mean(K_ss) + offdiag_mean(K_rr) - 2.0 * K_sr.mean()
-# 	mmd = torch.sqrt(torch.clamp(mmd2, min=0.0) + EPS)
-# 	return mmd2
 
 # =====================================================
 # Diagnostics helpers (added)
@@ -665,19 +574,3 @@ def pair_angle(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 	c = (F.normalize(a,dim=1) * F.normalize(b,dim=1)).sum(dim=1).clamp(-1+1e-6, 1-1e-6)
 	return torch.acos(c)  # [B] in radians
 
-
-########################################################
-# def naive_mixing(w1, w0, ratio):
-# 	"""
-#  	Args:
-# 		w1 (dict): pretrained model weights
-# 		w0 (dict): random model weights
-# 		ratio (float): mixing ratio
-# 	"""
-	
-# 	# alpha*pretrained + (1-alpha) *random
-# 	w_merge = {}
-# 	for key in w1.keys():
-# 		w_merge[key] = w1[key].clone().to('cpu') * ratio + w0[key].clone().to('cpu') * (1.0 - ratio)
-	
-# 	return w_merge
