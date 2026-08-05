@@ -4,6 +4,8 @@ Official implementation of *Multimodal Distribution Matching for Vision-Language
 
 [Paper](https://arxiv.org/pdf/2605.23482)
 
+![Main](https://andyj1.github.io/mdm/img/fig2_crop.png)
+
 ## About
 
 Experts: [buffers](https://drive.google.com/drive/folders/1Q9etol246RjeB_XZ3on5aEGOirW4o1aB).
